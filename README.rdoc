@@ -1,0 +1,6 @@
+= Rubygem-passenger
+
+This project is an attempt to build RPMs for {Phusion
+Passenger}[http://mod_rails.org] for Fedora Core, RHEL 5+ (via EPEL)
+
+More to come!
