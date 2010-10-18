@@ -11,12 +11,17 @@
 %endif
 
 # Does Gem::Version crash&burn on the version defined above? (RHEL might)
-%if %(%{ruby} -rrubygems -e 'begin ; Gem::Version.create "%{version}" ; rescue => e ; puts 1 ; exit ; end ; puts 0')
+%define broken_gem_version %(%{ruby} -rrubygems -e 'begin ; Gem::Version.create "%{version}" ; rescue => e ; puts 1 ; exit ; end ; puts 0')
+
+%if %{broken_gem_version}
   # Strip any non-numeric version part
   %define gemversion %(echo '%{version}'|sed -e 's/\\.[^.]*[^.0-9]\\+[^.]*//g')
 %else
   %define gemversion %{version}
 %endif
+
+# Invoke a shell to do a comparison, silly but it works across versions of RPM
+%define gem_version_mismatch %([ '%{version}' != '%{gemversion}' ] && echo 1 || echo 0)
 
 %define ruby_sitelib %(%{ruby} -rrbconfig -e "puts Config::CONFIG['sitelibdir']")
 %define gemdir %(%{ruby} -rubygems -e 'puts Gem::dir' 2>/dev/null)
@@ -53,6 +58,11 @@ of Ruby web applications, such as those built on the revolutionary
 Ruby on Rails web framework, a breeze. It follows the usual Ruby on
 Rails conventions, such as “Don’t-Repeat-Yourself”.
 
+%if %{gem_version_mismatch}
+**NOTE: Because the default Gem::Version doesn't accept the correct
+version, it is installed as %{gemversion} instead of %{version}.
+%endif
+
 %package standalone
 Summary: Standalone Phusion Passenger Server
 Group: System Environment/Daemons
@@ -81,8 +91,7 @@ This package contains the pluggable Apache server module for Passenger.
 %prep
 %setup -q -n %{gemname}-%{version}
 
-# Invoke a shell to do a comparison, silly but it works across versions of RPM
-%if %([ '%{version}' != '%{gemversion}' ] && echo 1 || echo 0)
+%if %{gem_version_mismatch}
   %{warn:
 ***
 *** WARNING: Your Gem::Version crashes on '%version,'
