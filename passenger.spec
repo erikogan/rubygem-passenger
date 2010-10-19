@@ -103,7 +103,7 @@ Rails conventions, such as “Don’t-Repeat-Yourself”.
 This package contains the pluggable Apache server module for Passenger.
 
 %package -n nginx-passenger
-Summary: nginx server with Phusion Passenger enabled 
+Summary: nginx server with Phusion Passenger enabled
 Group: System Environment/Daemons
 Requires: %{name} = %{passenger_version}
 Version: %{nginx_version}
@@ -173,7 +173,7 @@ mkdir -p %{buildroot}/%{nginx_logdir}
 # the string saved for 'nginx -V'
 #
 # In any case, fix it correctly later
-perl -pi -e 's{^install:\s*$}{$&\tperl -pi -e '\''s<%{_builddir}><%%{_builddir}>g;s<%{buildroot}><%%{buildroot}>g;'\'' objs/ngx_auto_config.h\n}' %{_builddir}/nginx-%{nginx_version}/auto/install
+perl -pi -e 's{^install:\s*$}{$&\tperl -pi -e '\''s<%{_builddir}><%%{_builddir}>g;s<%{buildroot}><>g;'\'' objs/ngx_auto_config.h\n}' %{_builddir}/nginx-%{nginx_version}/auto/install
 
 ### Stolen [and hacked] from the nginx spec file
 export DESTDIR=%{buildroot}
