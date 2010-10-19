@@ -59,6 +59,7 @@ BuildRequires: ruby-devel
 BuildRequires: httpd-devel
 BuildRequires: rubygems
 BuildRequires: rubygem(rake) >= 0.8.1
+BuildRequires: rubygem(fastthread) >= 1.0.1
 BuildRequires: doxygen
 BuildRequires: asciidoc
 # Can't have a noarch package with an arch'd subpackage
