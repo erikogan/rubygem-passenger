@@ -15,6 +15,7 @@
 %define nginx_confdir   %{_sysconfdir}/nginx
 %define nginx_datadir   %{_datadir}/nginx
 %define nginx_webroot   %{nginx_datadir}/html
+%define nginx_init	nginx
 
 # Ruby Macro on the command-line overrides this default
 %if !%{?ruby:1}%{!?ruby:0}
@@ -43,10 +44,21 @@ Name: rubygem-%{gemname}
 Version: %{passenger_version}
 Release: %{passenger_release}
 Group: System Environment/Daemons
-License: Modified BSD
+License: MIT
 URL: http://www.modrails.com/
 Source0: %{gemname}-%{passenger_version}.tar.gz
 Source1: nginx-%{nginx_version}.tar.gz
+# Nginx sources
+Source201:    %{name}.init
+Source202:    %{name}.logrotate
+Source203:    virtual.conf
+Source204:    ssl.conf
+Source205:    %{name}.sysconfig
+Source210:  index.html
+Source211:  poweredby.png
+Source212:  nginx-logo.png
+Source213:  50x.html
+Source214:  404.html
 Patch0: passenger-install-nginx-module.patch
 BuildRoot: %{_tmppath}/%{name}-%{passenger_version}-%{release}-root-%(%{__id_u} -n)
 Requires: rubygems
@@ -161,11 +173,6 @@ find %{buildroot}%{geminstdir} -type f -print0 | xargs -0 perl -pi -e 's{#!(/opt
 mkdir -p %{buildroot}/%{_libdir}/httpd/modules
 install -m 0644 ext/apache2/mod_passenger.so %{buildroot}/%{_libdir}/httpd/modules
 
-mkdir -p %{buildroot}/%{nginx_datadir}
-mkdir -p %{buildroot}/%{nginx_datadir}
-mkdir -p %{buildroot}/%{nginx_confdir}
-mkdir -p %{buildroot}/%{nginx_logdir}
-
 ##### Nginx. This should probably be in the %%build, with apache, but
 ##### it installs directly
 
@@ -198,8 +205,44 @@ export DESTDIR=%{buildroot}
     --with-http_gzip_static_module \
     --with-http_stub_status_module \
 "
+# These need to be revisited once this is working
 #     --with-cc-opt='%{optflags} %(pcre-config --cflags)' \
 #     --add-module=%{_builddir}/%{gemname}-%{passenger_version}/nginx-%{nginx_version}/nginx-upstream-fair \
+
+%{__install} -p -D -m 0755 %{SOURCE201} %{buildroot}%{_initrddir}/%{name}
+%{__install} -p -D -m 0644 %{SOURCE202} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
+%{__install} -p -D -m 0644 %{SOURCE205} %{buildroot}%{_sysconfdir}/sysconfig/%{name}
+%{__install} -p -d -m 0755 %{buildroot}%{nginx_confdir}/conf.d
+%{__install} -p -m 0644 %{SOURCE203} %{SOURCE204} %{buildroot}%{nginx_confdir}/conf.d
+%{__install} -p -d -m 0755 %{buildroot}%{nginx_home_tmp}
+%{__install} -p -d -m 0755 %{buildroot}%{nginx_logdir}
+%{__install} -p -d -m 0755 %{buildroot}%{nginx_webroot}
+%{__install} -p -m 0644 %{SOURCE210} %{SOURCE211} %{SOURCE212} %{SOURCE213} %{SOURCE214} %{buildroot}%{nginx_webroot}
+
+
+
+%pre nginx
+if [ $1 == 1 ]; then
+    %{_sbindir}/useradd -c "Passenger user" -s /bin/false -r -d %{nginx_home} %{nginx_user} 2>/dev/null || :
+fi
+
+%post nginx
+if [ $1 == 1 ]; then
+    /sbin/chkconfig --add %{nginx_init}
+fi
+
+%preun nginx
+if [ $1 = 0 ]; then
+    /sbin/service %{nginx_init} stop >/dev/null 2>&1
+    /sbin/chkconfig --del %{nginx_init}
+fi
+
+%postun
+if [ $1 == 2 ]; then
+    /sbin/service %{nginx_init} upgrade || :
+fi
+
+
 
 %clean
 rm -rf %{buildroot}
@@ -232,9 +275,11 @@ rm -rf %{buildroot}
 %files -n nginx-passenger
 %doc doc/Users\ guide\ Nginx.html
 %doc doc/Users\ guide\ Nginx.txt
-/etc/nginx
-/usr/sbin/nginx
+%{nginx_confdir}
+%{_sbindir}/nginx
 /usr/share/nginx
+%{nginx_logdir}
+%{nginx_home_tmp}
 
 %changelog
 * Mon Oct 18 2010 Erik Ogan <erik@stealthymonkeys.com> - 3.0.0.pre4-1
