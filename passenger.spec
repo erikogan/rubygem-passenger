@@ -215,12 +215,12 @@ install -p -d -m 0755 %{buildroot}/%{nginx_confdir}/conf.d
 #install -m 0644 %{SOURCE100} %{buildroot}/%{nginx_confdir}/conf.d/passenger.conf
 perl -pe 's{%%ROOT}{%geminstdir}g' %{SOURCE100} > %{buildroot}/%{nginx_confdir}/conf.d/passenger.conf
 
-%post
+%post -n nginx-passenger
 if [ $1 == 1 ]; then
   /usr/sbin/alternatives --install /usr/sbin/nginx nginx /usr/sbin/nginx.passenger 50
 fi
 
-%postun
+%postun -n nginx-passenger
 if [ $1 == 0 ]; then
   /usr/sbin/alternatives --remove nginx /usr/sbin/nginx.passenger
 fi
