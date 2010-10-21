@@ -80,7 +80,7 @@ version, it is installed as %{gemversion} instead of %{version}.
 %package standalone
 Summary: Standalone Phusion Passenger Server
 Group: System Environment/Daemons
-Requires: %name
+Requires: %{name} = %{passenger_version}-%{release}
 %description standalone
 Phusion Passenger™ — a.k.a. mod_rails or mod_rack — makes deployment
 of Ruby web applications, such as those built on the revolutionary
@@ -92,7 +92,7 @@ This package contains the standalone Passenger server
 %package apache
 Summary: Apache Module for Phusion Passenger
 Group: System Environment/Daemons
-Requires: %name
+Requires: %{name} = %{passenger_version}-%{release}
 #BuildArch: %_target_arch
 %description apache
 Phusion Passenger™ — a.k.a. mod_rails or mod_rack — makes deployment
@@ -111,6 +111,7 @@ Release: %{passenger_version}_%{release}
 BuildRequires: pcre-devel
 BuildRequires: zlib-devel
 BuildRequires: openssl-devel
+Requires: %{name} = %{passenger_version}-%{release}
 Requires: pcre
 Requires: zlib
 Requires: openssl
