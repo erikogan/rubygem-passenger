@@ -3,7 +3,7 @@
 
 %define gemname passenger
 %define passenger_version 3.0.0.pre4
-%define passenger_release 1%{?dist}
+%define passenger_release 2%{?dist}
 
 %define nginx_version 0.8.52
 %define nginx_release %{passenger_version}_%{passenger_release}
@@ -47,8 +47,9 @@ License: Modified BSD
 URL: http://www.modrails.com/
 Source0: %{gemname}-%{passenger_version}.tar.gz
 Source1: nginx-%{nginx_version}.tar.gz
+Source100: nginx-passenger.conf.in
 Patch0: passenger-install-nginx-module.patch
-BuildRoot: %{_tmppath}/%{name}-%{passenger_version}-%{release}-root-%(%{__id_u} -n)
+BuildRoot: %{_tmppath}/%{name}-%{passenger_version}-%{passenger_release}-root-%(%{__id_u} -n)
 Requires: rubygems
 Requires: rubygem(rake) >= 0.8.1
 Requires: rubygem(fastthread) >= 1.0.1
@@ -80,7 +81,7 @@ version, it is installed as %{gemversion} instead of %{version}.
 %package standalone
 Summary: Standalone Phusion Passenger Server
 Group: System Environment/Daemons
-Requires: %{name} = %{passenger_version}-%{release}
+Requires: %{name} = %{passenger_version}-%{passenger_release}
 %description standalone
 Phusion Passenger™ — a.k.a. mod_rails or mod_rack — makes deployment
 of Ruby web applications, such as those built on the revolutionary
@@ -92,7 +93,7 @@ This package contains the standalone Passenger server
 %package apache
 Summary: Apache Module for Phusion Passenger
 Group: System Environment/Daemons
-Requires: %{name} = %{passenger_version}-%{release}
+Requires: %{name} = %{passenger_version}-%{passenger_release}
 #BuildArch: %_target_arch
 %description apache
 Phusion Passenger™ — a.k.a. mod_rails or mod_rack — makes deployment
@@ -111,11 +112,11 @@ Release: %{passenger_version}_%{release}
 BuildRequires: pcre-devel
 BuildRequires: zlib-devel
 BuildRequires: openssl-devel
-Requires: %{name} = %{passenger_version}-%{release}
+Requires: %{name} = %{passenger_version}-%{passenger_release}
 Requires: pcre
 Requires: zlib
 Requires: openssl
-Conflicts: nginx
+Requires: nginx-alternatives
 %description -n nginx-passenger
 Phusion Passenger™ — a.k.a. mod_rails or mod_rack — makes deployment
 of Ruby web applications, such as those built on the revolutionary
@@ -181,7 +182,7 @@ export DESTDIR=%{buildroot}
 ./bin/passenger-install-nginx-module --auto --nginx-source-dir=%{_builddir}/nginx-%{nginx_version} --prefix=%{buildroot}/%{nginx_datadir} --extra-make-install-flags='DESTDIR=%{buildroot} INSTALLDIRS=vendor' --extra-configure-flags="--user=%{nginx_user} \
     --group=%{nginx_group} \
     --prefix=%{nginx_datadir} \
-    --sbin-path=%{_sbindir}/nginx \
+    --sbin-path=%{_sbindir}/nginx.passenger \
     --conf-path=%{nginx_confdir}/nginx.conf \
     --error-log-path=%{nginx_logdir}/error.log \
     --http-log-path=%{nginx_logdir}/access.log \
@@ -201,6 +202,22 @@ export DESTDIR=%{buildroot}
 "
 #     --with-cc-opt='%{optflags} %(pcre-config --cflags)' \
 #     --add-module=%{_builddir}/%{gemname}-%{passenger_version}/nginx-%{nginx_version}/nginx-upstream-fair \
+
+# Clean up everything we don't care about
+rm -rf %{buildroot}/usr/share/nginx %{buildroot}/%{nginx_confdir}
+install -p -d -m 0755 %{buildroot}/%{nginx_confdir}/conf.d
+#install -m 0644 %{SOURCE100} %{buildroot}/%{nginx_confdir}/conf.d/passenger.conf
+perl -pe 's{%%ROOT}{%geminstdir}g' %{SOURCE100} > %{buildroot}/%{nginx_confdir}/conf.d/passenger.conf
+
+%post
+if [ $1 == 1 ]; then
+  /usr/sbin/alternatives --install /usr/sbin/nginx nginx /usr/sbin/nginx.passenger 50
+fi
+
+%postun
+if [ $1 == 0 ]; then
+  /usr/sbin/alternatives --remove nginx /usr/sbin/nginx.passenger
+fi
 
 %clean
 rm -rf %{buildroot}
@@ -233,12 +250,14 @@ rm -rf %{buildroot}
 %files -n nginx-passenger
 %doc doc/Users\ guide\ Nginx.html
 %doc doc/Users\ guide\ Nginx.txt
-/etc/nginx
-/usr/sbin/nginx
-/usr/share/nginx
+/etc/nginx/conf.d/passenger.conf
+/usr/sbin/nginx.passenger
 
 %changelog
-* Mon Oct 18 2010 Erik Ogan <erik@stealthymonkeys.com> - 3.0.0.pre4-1
+* Wed Oct 18 2010 Erik Ogan <erik@stealthymonkeys.com> - 3.0.0.pre4-2
+- use nginx-alternatives
+
+* Sun Oct 17 2010 Erik Ogan <erik@stealthymonkeys.com> - 3.0.0.pre4-1
 - Nginx suport
 
 * Mon Oct 11 2010 Erik Ogan <erik@stealthymonkeys.com> - 3.0.0.pre4-0
