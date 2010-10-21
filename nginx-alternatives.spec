@@ -1,7 +1,7 @@
 Summary: Alternatives aware nginx 
 Name: nginx-alternatives
 Version: 0.0.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: MIT
 Group: System Environment/Daemons
 #Source0: %{name}-%{version}.tar.gz
@@ -30,20 +30,32 @@ mkdir -p $RPM_BUILD_ROOT
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post
-if [ $1 == 1 ]; then
+%triggerin -- nginx
+echo "IN: $@"
+if [ ! -L /usr/sbin/nginx ] ; then
   mv /usr/sbin/nginx /usr/sbin/nginx.base
   /usr/sbin/alternatives --install /usr/sbin/nginx nginx /usr/sbin/nginx.base 30
 fi
 
+# Given that other packages will depend on this one, it's 99% likely
+# that this will have been reset back to base. Still good practice to
+# put the expected binary back in place.
+%define undo_link \
+  bin=`readlink -f /usr/sbin/nginx` \
+  /usr/sbin/alternatives --remove nginx /usr/sbin/nginx.base \
+  /usr/sbin/alternatives --remove nginx $bin \
+  mv -f $bin /usr/sbin/nginx
+
+
+%triggerun -- nginx
+if [ -L /usr/sbin/nginx ] ; then
+  %undo_link
+fi
+
+
 %postun
 if [ $1 == 0 ]; then
-  # Given that other packages will depend on this one, it's 99% likely
-  # that this will have been reset back to base. Still good practice
-  # to put the expected binary back in place.
-  bin=`readlink -f /usr/sbin/nginx`
-  /usr/sbin/alternatives --remove nginx /usr/sbin/nginx.base
-  mv -f $bin /usr/sbin/nginx
+  %undo_link
 fi
 
 %files
@@ -51,6 +63,8 @@ fi
 %doc README.%{name}
 
 %changelog
+* Thu Oct 21 2010 Erik Ogan <erik@stealthymonkeys.com> - 0.0.1-2
+- Use triggers to maintain the link if nginx package is upgraded
+
 * Wed Oct 20 2010 Erik Ogan <erik@stealthymonkeys.com> - 0.0.1-1
 - Initial build.
-
