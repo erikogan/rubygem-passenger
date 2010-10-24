@@ -46,8 +46,8 @@
 %define geminstdir %{gemdir}/gems/%{gemname}-%{gemversion}
 
 # This will cause a chicken/egg problem where the dir isn't present yet
-#% define gemnativedir %(%{ruby} -I%{_builddir}/%{gemname}-%{passenger_version}/lib -rphusion_passenger/platform_info/binary_compatibility -e 'puts PhusionPassenger::PlatformInfo.ruby_extension_binary_compatibility_ids.join("-")')
-# %define native_libs_release %{passenger_release}_%(%{ruby} -I%{_builddir}/%{gemname}-%{passenger_version}/lib -rphusion_passenger/platform_info/binary_compatibility -e 'puts PhusionPassenger::PlatformInfo.ruby_extension_binary_compatibility_ids[0,2].join("_")')
+#% define gemnativedir % (%{ruby} -I%{_builddir}/%{gemname}-%{passenger_version}/lib -rphusion_passenger/platform_info/binary_compatibility -e 'puts PhusionPassenger::PlatformInfo.ruby_extension_binary_compatibility_ids.join("-")')
+# %define native_libs_release %{passenger_release}_% (%{ruby} -I%{_builddir}/%{gemname}-%{passenger_version}/lib -rphusion_passenger/platform_info/binary_compatibility -e 'puts PhusionPassenger::PlatformInfo.ruby_extension_binary_compatibility_ids[0,2].join("_")')
 %define native_libs_release %{passenger_release}_%{ruby_version_patch}
 
 %{!?only_native_libs: %define only_native_libs 0}
