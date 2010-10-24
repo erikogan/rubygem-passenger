@@ -3,7 +3,7 @@
 
 %define gemname passenger
 %define passenger_version 3.0.0
-%define passenger_release 3%{?dist}
+%define passenger_release 4%{?dist}
 %define passenger_epoch 1
 
 %define nginx_version 0.8.52
@@ -342,6 +342,10 @@ rm -rf %{buildroot}
 %{geminstdir}/ext/ruby/%{gemnativedir}
 
 %changelog
+* Sat Oct 23 2010 Erik Ogan <erik@stealthymonkeys.com> - 3.0.0-4
+- --define 'only_native_libs 1' to rebuild native_support.so for a
+  different ruby engine.
+
 * Fri Oct 22 2010 Erik Ogan <erik@stealthymonkeys.com> - 3.0.0-3
 - Break the passenger_native_support.so into its own package
 
