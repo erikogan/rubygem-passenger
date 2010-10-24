@@ -27,7 +27,7 @@
 
 %define ruby_sitelib %(%{ruby} -rrbconfig -e "puts Config::CONFIG['sitelibdir']")
 
-%define ruby_version_patch %(%{ruby} -e 'puts "#{RUBY_VERSION}#{defined?(RUBY_PATCHLEVEL) ? %q{.} + RUBY_PATCHLEVEL : nil}"')
+%define ruby_version_patch %(%{ruby} -e 'puts "#{RUBY_VERSION}#{defined?(RUBY_PATCHLEVEL) ? %q{.} + RUBY_PATCHLEVEL.to_s : nil}"')
 
 # Does Gem::Version crash&burn on the version defined above? (RHEL might)
 %define broken_gem_version %(%{ruby} -rrubygems -e 'begin ; Gem::Version.create "%{passenger_version}" ; rescue => e ; puts 1 ; exit ; end ; puts 0')
