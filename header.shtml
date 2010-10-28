@@ -32,7 +32,7 @@ pre {
 
     <div id="content">
       <p>
-        Welcome to the repository. Here you’ll find RPM packagess of <a
+        Welcome to the repository. Here you&rsquo;ll find RPM packages of <a
         href="http://modrails.com/">Phusion Passenger</a> (aka mod_rails) for
         <a href="http://fedoraproject.org/">Fedora</a> and <a
         href="http://www.redhat.com/rhel/">RedHat Enterprise Linux</a> (and
