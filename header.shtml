@@ -32,7 +32,12 @@ pre {
 
     <div id="content">
       <p>
-        Welcome to the repository. Here you'll find RPMs for Phusion Passenger.
+        Welcome to the repository. Here you’ll find RPM packagess of <a
+        href="http://modrails.com/">Phusion Passenger</a> (aka mod_rails) for
+        <a href="http://fedoraproject.org/">Fedora</a> and <a
+        href="http://www.redhat.com/rhel/">RedHat Enterprise Linux</a> (and
+        derivatives like <a href="http://centos.org">CentOS</a> and <a
+        href="https://www.scientificlinux.org/">Scientific Linux</a>).
       </p>
 
       <p>
