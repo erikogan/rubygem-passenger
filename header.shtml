@@ -20,6 +20,10 @@ h1 {
 div#content {
   padding: 0 1em;
 }
+pre {
+  /* I think Courier New looks the best, but Andale Mono is preferable to the default */
+  font-family: Courier New, Andale Mono, Courier, monospace;
+}
     </style>
   </head>
 
