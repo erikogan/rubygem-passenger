@@ -191,7 +191,11 @@ Release: %{passenger_version}_%{passenger_release}
 BuildRequires: pcre-devel
 BuildRequires: zlib-devel
 BuildRequires: openssl-devel
+%if %{?fedora:1}%{?!fedora:0}
 BuildRequires: perl-devel
+%else
+BuildRequires: perl
+%endif
 BuildRequires: perl(ExtUtils::Embed)
 Requires: %{name}-native-libs = %{passenger_epoch}:%{passenger_version}-%{passenger_release}
 Requires: pcre
