@@ -8,7 +8,8 @@ Passenger}[http://modrails.org] for Fedora Core 13+, RHEL 5.5+, and CentOS
 
 === Yum Package
 
-[passenger-release] Yum configuration necessary to query the main repository
+[passenger-release] Yum configuration necessary to query the
+                    {main repository}[http://passenger.stealthymonkeys.com]
                     (and eventually mirrors) for updates.
 
 === Main Packages
