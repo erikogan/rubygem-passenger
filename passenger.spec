@@ -345,7 +345,7 @@ cp -ra ext/ruby/*-linux %{buildroot}/%{geminstdir}/ext/ruby
 #### Clean up everything we don't care about
 rm -rf %{buildroot}/usr/share/nginx %{buildroot}/%{nginx_confdir}
 # Assume the old version is good enough. Probably not wise.
-rm -rf %{buildroot}%{_libdir}/perl5 %{buildroot}{%_mandir}/man3/nginx.3pm*
+rm -rf %{buildroot}%{_libdir}/perl5 %{buildroot}%{_mandir}/man3/nginx.3pm*
 
 install -p -d -m 0755 %{buildroot}/%{nginx_confdir}/conf.d
 #install -m 0644 %{SOURCE100} %{buildroot}/%{httpd_confdir}/passenger.conf
