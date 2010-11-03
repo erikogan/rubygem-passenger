@@ -3,7 +3,7 @@
 
 %define gemname passenger
 %define passenger_version 3.0.0
-%define passenger_release 5%{?dist}
+%define passenger_release 8%{?dist}
 %define passenger_epoch 1
 
 %define nginx_version 0.8.52
@@ -45,6 +45,8 @@
 %define gemdir %(%{ruby} -rubygems -e 'puts Gem::dir' 2>/dev/null)
 %define geminstdir %{gemdir}/gems/%{gemname}-%{gemversion}
 
+%define perldir %(perl -MConfig -e 'print $Config{installvendorarch}')
+
 # This will cause a chicken/egg problem where the dir isn't present yet
 #% define gemnativedir % (%{ruby} -I%{_builddir}/%{gemname}-%{passenger_version}/lib -rphusion_passenger/platform_info/binary_compatibility -e 'puts PhusionPassenger::PlatformInfo.ruby_extension_binary_compatibility_ids.join("-")')
 # %define native_libs_release %{passenger_release}_% (%{ruby} -I%{_builddir}/%{gemname}-%{passenger_version}/lib -rphusion_passenger/platform_info/binary_compatibility -e 'puts PhusionPassenger::PlatformInfo.ruby_extension_binary_compatibility_ids[0,2].join("_")')
@@ -67,6 +69,9 @@ Source1: nginx-%{nginx_version}.tar.gz
 Source100: apache-passenger.conf.in
 Source101: nginx-passenger.conf.in
 Source200: rubygem-passenger.te
+# Ignore everything after the ?, it's meant to trick rpmbuild into
+# finding the correct file
+Source300: http://github.com/gnosek/nginx-upstream-fair/tarball/master?/nginx-upstream-fair.tar.gz
 Patch0: passenger-install-nginx-module.patch
 BuildRoot: %{_tmppath}/%{name}-%{passenger_version}-%{passenger_release}-root-%(%{__id_u} -n)
 Requires: rubygems
@@ -188,10 +193,17 @@ Release: %{passenger_version}_%{passenger_release}
 BuildRequires: pcre-devel
 BuildRequires: zlib-devel
 BuildRequires: openssl-devel
+%if %{?fedora:1}%{?!fedora:0}
+BuildRequires: perl-devel
+%else
+BuildRequires: perl
+%endif
+BuildRequires: perl(ExtUtils::Embed)
 Requires: %{name}-native-libs = %{passenger_epoch}:%{passenger_version}-%{passenger_release}
 Requires: pcre
 Requires: zlib
 Requires: openssl
+Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
 Requires: nginx-alternatives
 Epoch: %{passenger_epoch}
 %description -n nginx-passenger
@@ -206,6 +218,9 @@ This package includes an nginx server with Passenger compiled in.
 
 %prep
 %setup -q -n %{gemname}-%{passenger_version} -b 1
+%setup -q -T -D -n nginx-%{nginx_version} -a 300
+# Fix the CWD
+%setup -q -T -D -n %{gemname}-%{passenger_version}
 %patch0 -p1
 
 %if %{gem_version_mismatch}
@@ -276,6 +291,16 @@ perl -pi -e 's{^install:\s*$}{$&\tperl -pi -e '\''s<%{buildroot}><>g;s<%{_buildd
 
 ### Stolen [and hacked] from the nginx spec file
 export DESTDIR=%{buildroot}
+export FAIRDIR=%{_builddir}/nginx-%{nginx_version}/gnosek-nginx-upstream-fair-*
+# I'm not sure why this fails on RHEL but not Fedora. I guess GCC 4.4 is
+# smarter about it than 4.1? It feels wrong to do this, but I don't see
+# an easier way out.
+%if %{?fedora:1}%{?!fedora:0}
+  %define nginx_ccopt %{optflags}
+%else
+  %define nginx_ccopt %(echo "%{optflags}" | sed -e 's/SOURCE=2/& -Wno-unused/')
+%endif
+
 ./bin/passenger-install-nginx-module --auto --nginx-source-dir=%{_builddir}/nginx-%{nginx_version} --prefix=%{buildroot}/%{nginx_datadir} --extra-make-install-flags='DESTDIR=%{buildroot} INSTALLDIRS=vendor' --extra-configure-flags="--user=%{nginx_user} \
     --group=%{nginx_group} \
     --prefix=%{nginx_datadir} \
@@ -295,10 +320,19 @@ export DESTDIR=%{buildroot}
     --with-http_dav_module \
     --with-http_flv_module \
     --with-http_gzip_static_module \
+    --with-http_random_index_module \
+    --with-http_secure_link_module \
     --with-http_stub_status_module \
+    --with-http_perl_module \
+    --with-mail \
+    --with-mail_ssl_module \
+    --with-ipv6 \
+    --add-module=$FAIRDIR \
+    --with-cc-opt='%{nginx_ccopt} %(pcre-config --cflags)' \
+    --with-ld-opt=-Wl,-E
 "
-#     --with-cc-opt='%{optflags} %(pcre-config --cflags)' \
-#     --add-module=%{_builddir}/%{gemname}-%{passenger_version}/nginx-%{nginx_version}/nginx-upstream-fair \
+# Too tired to figure out why this isn't working (when the above does)
+#    --with-ld-opt='%(perl -MExtUtils::Embed -e ldopts)' \
 
 # I should probably figure out how to get these into the gem
 cp -ra agents %{buildroot}/%{geminstdir}
@@ -313,8 +347,18 @@ mkdir -p %{buildroot}/%{geminstdir}/ext/ruby
 cp -ra ext/ruby/*-linux %{buildroot}/%{geminstdir}/ext/ruby
 
 %if !%{only_native_libs}
-# Clean up everything we don't care about
+#### Clean up everything we don't care about
 rm -rf %{buildroot}/usr/share/nginx %{buildroot}/%{nginx_confdir}
+# # Assume the old version is good enough. Probably not wise.
+# rm -rf %{buildroot}%{perldir} %{buildroot}%{_mandir}/man3/nginx.3pm*
+rm -f %{buildroot}%{perldir}/{auto/nginx/.packlist,perllocal.pod}
+# RHEL distinguishes these dirs
+rm -f %{buildroot}%(perl -MConfig -e 'print $Config{installarchlib}')/perllocal.pod
+mv %{buildroot}%{perldir}/auto/nginx/nginx{,_passenger}.bs
+mv %{buildroot}%{perldir}/auto/nginx/nginx{,_passenger}.so
+mv %{buildroot}%{perldir}/nginx{,_passenger}.pm
+mv %{buildroot}%{_mandir}/man3/nginx.3pm{,_passenger}
+
 install -p -d -m 0755 %{buildroot}/%{nginx_confdir}/conf.d
 #install -m 0644 %{SOURCE100} %{buildroot}/%{httpd_confdir}/passenger.conf
 #install -m 0644 %{SOURCE101} %{buildroot}/%{nginx_confdir}/conf.d/passenger.conf
@@ -323,7 +367,15 @@ perl -pe 's{%%ROOT}{%geminstdir}g;s{%%RUBY}{%ruby}g' %{SOURCE101} > %{buildroot}
 
 %post -n nginx-passenger
 if [ $1 == 1 ]; then
-  /usr/sbin/alternatives --install /usr/sbin/nginx nginx /usr/sbin/nginx.passenger 50
+  /usr/sbin/alternatives --install /usr/sbin/nginx nginx \
+				   /usr/sbin/nginx.passenger 50 \
+    --slave %{perldir}/auto/nginx/nginx.so nginx.so \
+	    %{perldir}/auto/nginx/nginx_passenger.so \
+    --slave %{perldir}/auto/nginx/nginx.bs nginx.bs \
+	    %{perldir}/auto/nginx/nginx_passenger.bs \
+    --slave %{perldir}/nginx.pm nginx.pm %{perldir}/nginx_passenger.pm \
+    --slave %{_mandir}/man3/nginx.3pm.gz nginx.man \
+	    %{_mandir}/man3/nginx_passenger.3pm.gz
 fi
 
 %postun -n nginx-passenger
@@ -389,6 +441,9 @@ rm -rf %{buildroot}
 %doc doc/Users\ guide\ Nginx.txt
 %{nginx_confdir}/conf.d/passenger.conf
 /usr/sbin/nginx.passenger
+%{perldir}/auto/nginx/nginx*
+%{perldir}/nginx*
+%{_mandir}/man3/nginx*
 %endif # !only_native_libs
 
 %files native-libs
@@ -397,6 +452,17 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sun Oct 31 2010 Erik Ogan <erik@stealthymonkeys.com> - 3.0.0-8
+- Fix embedded Perl module
+
+* Fri Oct 29 2010 Erik Ogan <erik@stealthymonkeys.com> - 3.0.0-7
+- Add back all the missing directives from nginx.spec (Perl is
+  untested and may be broken)
+
+* Fri Oct 29 2010 Erik Ogan <erik@stealthymonkeys.com> - 3.0.0-6
+- Add upstream-fair load-balancer back to nginx
+- Add the original CFLAGS back to nginx (with -Wno-unused kludge for RHEL5)
+
 * Sat Oct 23 2010 Erik Ogan <erik@cloudshield.com> - 3.0.0-5
 - RHEL/CentOS Ruby is too old to support RUBY_PATCHLEVEL
 
