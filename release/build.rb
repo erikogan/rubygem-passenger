@@ -79,10 +79,8 @@ if configs.empty?
   abort "Can't find a set of configs for '#{ARGV[0]}' (hint try 'fedora' or 'fedora-14' or even 'fedora-14-x86_64')"
 end
 
-puts "rm -rf #{stage_dir}"
-FileUtils.rm_rf(stage_dir)
-puts "mkdir -p #{stage_dir}"
-FileUtils.mkdir_p(stage_dir)
+FileUtils.rm_rf(stage_dir, :verbose => true)
+FileUtils.mkdir_p(stage_dir, :verbose => true)
 
 # Check the ages of the configs for validity
 mtime = File.mtime("#{bindir}/mocksetup.sh")
@@ -99,13 +97,15 @@ end
 
 # No dist for SRPM
 noisy_system(rpmbuild, '--define', 'dist %nil', '-bs', 'passenger.spec')
+
 # I really wish there was a way to query rpmbuild for this via the spec file,
 # but rpmbuild --eval doesn't seem to work
 srpm=`ls -1t $HOME/rpmbuild/SRPMS | head -1`.chomp
-puts "mkdir -p #{stage_dir}/SRPMS"
-FileUtils.mkdir_p(stage_dir + '/SRPMS')
-puts "cp #{rpmbuilddir}/SRPMS/#{srpm} #{stage_dir}/SRPMS"
-File.copy "#{rpmbuilddir}/SRPMS/#{srpm}", "#{stage_dir}/SRPMS"
+
+FileUtils.mkdir_p(stage_dir + '/SRPMS', :verbose => true)
+
+FileUtils.cp("#{rpmbuilddir}/SRPMS/#{srpm}", "#{stage_dir}/SRPMS", 
+             :verbose => true)
 
 configs.each do |cfg|
   puts "---------------------- Building #{cfg}"
@@ -116,14 +116,12 @@ configs.each do |cfg|
     abort "Mock failed. See above for details"
   end
   FileUtils.mkdir_p(idir, :verbose => true)
-  # puts "cp /var/lib/mock/#{pcfg}/result/*.rpm #{stage_dir}/#{idir}"
-  # Dir["cp /var/lib/mock/#{pcfg}/result/*.rpm"].each
   FileUtils.cp(Dir["/var/lib/mock/#{pcfg}/result/*.rpm"],
               idir, :verbose => true)
 end
 
 if File.directory?("#{stage_dir}/epel")
-  FileUtils.mv "#{stage_dir}/epel", "#{stage_dir}/rhel"
+  FileUtils.mv "#{stage_dir}/epel", "#{stage_dir}/rhel", :verbose => true
 end
 
 noisy_system('rpm', '--addsign', *Dir["#{stage_dir}/**/*.rpm"])
