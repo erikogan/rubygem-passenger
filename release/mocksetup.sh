@@ -1,6 +1,7 @@
 #!/bin/sh
 
 repo=${1:-/var/lib/mock/passenger-build-repo}
+etc=${2:-/etc/mock}
 
 # For the written files & dirs, we want g+w, this isn't consistent enough
 # umask 002
@@ -10,7 +11,7 @@ set -e
 # For the non-groupinstall configs, pull the members out of the mock-comps.xml
 prereqs=`egrep 'packagereq.*default' $(dirname $0)/mock-comps.xml | cut -d\> -f2 | cut -d\< -f1 | tr '\n' ' '`
 
-for cfg in /etc/mock/{fedora-{13,14},epel-5}-*.cfg
+for cfg in $etc/{fedora-{13,14},epel-5}-*.cfg
 do
   echo $cfg
   dir=`dirname $cfg`
