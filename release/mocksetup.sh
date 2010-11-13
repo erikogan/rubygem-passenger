@@ -2,7 +2,7 @@
 
 repo=${1:-/var/lib/mock/passenger-build-repo}
 etc=${2:-/etc/mock}
-
+BUILD_VERBOSITY=${BUILD_VERBOSITY:-0}
 # For the written files & dirs, we want g+w, this isn't consistent enough
 # umask 002
 
@@ -13,7 +13,7 @@ prereqs=`egrep 'packagereq.*default' $(dirname $0)/mock-comps.xml | cut -d\> -f2
 
 for cfg in $etc/{fedora-{13,14},epel-5}-*.cfg
 do
-  echo $cfg
+  [ $BUILD_VERBOSITY -ge 2 ] && echo $cfg
   dir=`dirname $cfg`
   base=`basename $cfg`
   new=$dir/passenger-$base
@@ -42,5 +42,16 @@ done
 
 mkdir -p $repo
 cat `dirname $0`/mock-comps.xml > $repo/comps.xml
-createrepo -g comps.xml $repo
+
+
+createrepo_volume=
+if [ $BUILD_VERBOSITY -gt 1 ]; then
+    createrepo_volume='-v'
+else
+    if [ $BUILD_VERBOSITY -le 0 ]; then
+        createrepo_volume='-q'
+    fi
+fi
+
+createrepo $createrepo_volume -g comps.xml $repo
 chmod -R g+w $repo 2>/dev/null || true
