@@ -168,7 +168,7 @@ ENV['BUILD_VERBOSITY'] = @verbosity.to_s
 mockvolume = @verbosity >= 2 ? %w{-v} : @verbosity < 0 ? %w{-q} : []
 
 configs.each do |cfg|
-  puts "---------------------- Building #{cfg}"
+  puts "---------------------- Building #{cfg}" if @verbosity >= 0
   pcfg = 'passenger-' + cfg
   idir = File.join stage_dir, cfg.split(/-/)
   # Move *mockvolume to the end, since it causes Ruby to cry in the middle
