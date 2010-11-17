@@ -134,10 +134,12 @@ if configs.empty?
   abort "Can't find a set of configs for '#{ARGV[0]}' (hint try 'fedora' or 'fedora-14' or even 'fedora-14-x86_64')"
 end
 
-puts "BUILD:\n" + configs.join("\n  ") if @verbosity >= 2
+puts "BUILD:\n  " + configs.join("\n  ") if @verbosity >= 2
 
 FileUtils.rm_rf(stage_dir, :verbose => @verbosity > 0)
 FileUtils.mkdir_p(stage_dir, :verbose => @verbosity > 0)
+
+ENV['BUILD_VERBOSITY'] = @verbosity.to_s
 
 # Check the ages of the configs for validity
 mtime = File.mtime("#{bindir}/mocksetup.sh")
@@ -164,7 +166,6 @@ FileUtils.mkdir_p(stage_dir + '/SRPMS', :verbose => @verbosity > 0)
 FileUtils.cp("#{rpmbuilddir}/SRPMS/#{srpm}", "#{stage_dir}/SRPMS",
 :verbose => @verbosity > 0)
 
-ENV['BUILD_VERBOSITY'] = @verbosity.to_s
 mockvolume = @verbosity >= 2 ? %w{-v} : @verbosity < 0 ? %w{-q} : []
 
 configs.each do |cfg|

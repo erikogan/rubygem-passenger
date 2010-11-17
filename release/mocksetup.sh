@@ -1,12 +1,13 @@
 #!/bin/sh
 
+BUILD_VERBOSITY=${BUILD_VERBOSITY:-0}
+[ $BUILD_VERBOSITY -ge 3 ] && set -x
+set -e
+
 repo=${1:-/var/lib/mock/passenger-build-repo}
 etc=${2:-/etc/mock}
-BUILD_VERBOSITY=${BUILD_VERBOSITY:-0}
 # For the written files & dirs, we want g+w, this isn't consistent enough
 # umask 002
-
-set -e
 
 # For the non-groupinstall configs, pull the members out of the mock-comps.xml
 prereqs=`egrep 'packagereq.*default' $(dirname $0)/mock-comps.xml | cut -d\> -f2 | cut -d\< -f1 | tr '\n' ' '`
